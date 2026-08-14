@@ -1,0 +1,6 @@
+{
+  "name": "JLPT N5 Study Command Center",
+  "description": "Private personal JLPT N5 study command center with 12-week roadmap, authentic study materials, daily checklists, adaptive exams, mistake notebook, and readiness tracking for December 6, 2026 exam.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
