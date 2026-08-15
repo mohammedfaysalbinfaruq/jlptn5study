@@ -350,10 +350,10 @@ export const TodayView: React.FC<TodayViewProps> = ({
           </div>
           <div className="text-xs font-mono text-[#6B7280]">
             {[
-              todayTasks.some(t => t.subject === 'Vocabulary' && t.completed),
-              todayTasks.some(t => t.subject === 'Grammar' && t.completed),
-              todayTasks.some(t => t.subject === 'Kanji' && t.completed),
-              todayTasks.some(t => (t.subject === 'Listening' || t.subject === 'Reading') && t.completed),
+              todayList.some(t => t.subject === 'Vocabulary' && t.completed),
+              todayList.some(t => t.subject === 'Grammar' && t.completed),
+              todayList.some(t => t.subject === 'Kanji' && t.completed),
+              todayList.some(t => (t.subject === 'Listening' || t.subject === 'Reading') && t.completed),
               dueSrsItems.length === 0,
               !!todayExam
             ].filter(Boolean).length}/6 Steps Completed
@@ -364,7 +364,7 @@ export const TodayView: React.FC<TodayViewProps> = ({
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
           {/* Step 1: Vocabulary */}
           {(() => {
-            const isDone = todayTasks.some(t => t.subject === 'Vocabulary' && t.completed);
+            const isDone = todayList.some(t => t.subject === 'Vocabulary' && t.completed);
             return (
               <div
                 onClick={() => {
@@ -403,7 +403,7 @@ export const TodayView: React.FC<TodayViewProps> = ({
 
           {/* Step 2: Grammar */}
           {(() => {
-            const isDone = todayTasks.some(t => t.subject === 'Grammar' && t.completed);
+            const isDone = todayList.some(t => t.subject === 'Grammar' && t.completed);
             return (
               <div
                 onClick={() => onOpenPdf(assignedMaterial)}
@@ -439,7 +439,7 @@ export const TodayView: React.FC<TodayViewProps> = ({
 
           {/* Step 3: Kanji */}
           {(() => {
-            const isDone = todayTasks.some(t => t.subject === 'Kanji' && t.completed);
+            const isDone = todayList.some(t => t.subject === 'Kanji' && t.completed);
             return (
               <div
                 onClick={() => {
@@ -478,7 +478,7 @@ export const TodayView: React.FC<TodayViewProps> = ({
 
           {/* Step 4: Listening / Reading */}
           {(() => {
-            const isDone = todayTasks.some(t => (t.subject === 'Listening' || t.subject === 'Reading') && t.completed);
+            const isDone = todayList.some(t => (t.subject === 'Listening' || t.subject === 'Reading') && t.completed);
             return (
               <div
                 onClick={() => {

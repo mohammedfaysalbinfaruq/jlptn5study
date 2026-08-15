@@ -21,7 +21,8 @@ import {
   Bookmark,
   Clock,
   HelpCircle,
-  Maximize2
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 import { StudyMaterial, StudyCategory } from '../types';
 import { speakJapanese, sound } from '../utils/audio';
@@ -43,6 +44,7 @@ export const PdfReaderModal: React.FC<PdfReaderModalProps> = ({
   const [personalNotes, setPersonalNotes] = useState<string>(material.personalNotes || '');
   const [isSaved, setIsSaved] = useState(false);
   const [motivationalMessage, setMotivationalMessage] = useState<string | null>(null);
+  const [isFocusMode, setIsFocusMode] = useState(false);
 
   // Flashcard state
   const [flashcardIndex, setFlashcardIndex] = useState(0);
@@ -52,6 +54,19 @@ export const PdfReaderModal: React.FC<PdfReaderModalProps> = ({
   // Kanji hidden states
   const [hiddenMeanings, setHiddenMeanings] = useState<Record<number, boolean>>({});
   const [learnedKanji, setLearnedKanji] = useState<Set<number>>(new Set());
+
+  // Handle Escape key to exit focus mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFocusMode) {
+        setIsFocusMode(false);
+        sound.playClick();
+        showToast('Exited Focus Mode');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFocusMode]);
 
   // Save current material as last read on mount
   useEffect(() => {
@@ -215,90 +230,182 @@ export const PdfReaderModal: React.FC<PdfReaderModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/40 backdrop-blur-xs animate-fadeIn">
-      <div className="bg-white border border-[#E5E7EB] rounded-2xl w-full max-w-5xl h-[92vh] flex flex-col shadow-2xl overflow-hidden text-[#222222]">
+    <div className={`fixed inset-0 z-50 flex items-center justify-center transition-all animate-fadeIn ${
+      isFocusMode ? 'p-0 bg-white' : 'p-2 sm:p-4 md:p-6 bg-black/40 backdrop-blur-xs'
+    }`}>
+      <div className={`bg-white flex flex-col overflow-hidden text-[#222222] transition-all ${
+        isFocusMode
+          ? 'w-full h-full rounded-none border-none shadow-none'
+          : 'border border-[#E5E7EB] rounded-2xl w-full max-w-5xl h-[92vh] shadow-2xl'
+      }`}>
         
-        {/* Top Header & Unobtrusive Progress Indicator (Requirement 3 & 9) */}
-        <div className="px-4 sm:px-6 py-3 bg-white border-b border-[#E5E7EB] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-[#1677B8] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs">
-              <BookOpen className="w-4 h-4" />
-            </div>
-            <div className="min-w-0">
+        {/* Header: Focus Mode Bar vs Standard Top Header */}
+        {isFocusMode ? (
+          <div className="px-4 sm:px-8 py-2.5 bg-white/95 backdrop-blur-md border-b border-[#E5E7EB] flex items-center justify-between gap-3 shrink-0 z-10 sticky top-0">
+            <div className="flex items-center gap-3 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#1677B8] bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                  {material.category}
-                </span>
-                <span className="text-xs font-mono text-[#6B7280]">
-                  Week {material.assignedWeek}
-                </span>
-                <span className="text-xs text-[#9CA3AF]">•</span>
-                <span className="text-xs text-[#6B7280] font-mono">
-                  {material.pageRange || 'Reference'}
-                </span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#1677B8]">Focus Mode</span>
               </div>
-              <h2 className="text-sm sm:text-base font-bold text-[#111827] truncate mt-0.5">
+              <span className="text-xs text-[#D1D5DB]">•</span>
+              <span className="text-xs font-semibold text-[#111827] truncate max-w-xs sm:max-w-md">
                 {material.name}
-              </h2>
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {/* Minimal Mode Switcher Tabs */}
+              <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-[#E5E7EB] text-xs">
+                <button
+                  onClick={() => setActiveTab('textbook')}
+                  className={`px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer ${
+                    activeTab === 'textbook'
+                      ? 'bg-white text-[#1677B8] shadow-2xs'
+                      : 'text-[#6B7280] hover:text-[#111827]'
+                  }`}
+                >
+                  📖 Textbook
+                </button>
+                <button
+                  onClick={() => setActiveTab('flashcards')}
+                  className={`px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer ${
+                    activeTab === 'flashcards'
+                      ? 'bg-white text-[#1677B8] shadow-2xs'
+                      : 'text-[#6B7280] hover:text-[#111827]'
+                  }`}
+                >
+                  📇 Flashcards
+                </button>
+                <button
+                  onClick={() => setActiveTab('notes')}
+                  className={`px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer ${
+                    activeTab === 'notes'
+                      ? 'bg-white text-[#1677B8] shadow-2xs'
+                      : 'text-[#6B7280] hover:text-[#111827]'
+                  }`}
+                >
+                  📝 Notes
+                </button>
+              </div>
+
+              <button
+                onClick={() => {
+                  setIsFocusMode(false);
+                  sound.playClick();
+                  showToast('Exited Focus Mode');
+                }}
+                className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#222222] hover:text-[#111827] text-xs font-semibold border border-[#E5E7EB] flex items-center gap-1.5 transition-all cursor-pointer"
+                title="Exit Focus Mode (Esc)"
+              >
+                <Minimize2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Exit Focus (Esc)</span>
+              </button>
+
+              <button
+                onClick={onClose}
+                className="p-1.5 rounded-lg bg-white hover:bg-slate-100 text-[#6B7280] hover:text-[#111827] border border-[#E5E7EB] transition-colors cursor-pointer"
+                title="Close Reader"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
           </div>
-
-          {/* Unobtrusive Progress Bar & Tab Navigation */}
-          <div className="flex items-center gap-3">
-            <div className="hidden md:flex flex-col items-end gap-1 text-right">
-              <div className="text-[11px] font-mono text-[#6B7280]">
-                {completedSections}/{totalSections || 1} sections • <strong className="text-[#111827]">{progressPercent}%</strong>
+        ) : (
+          <div className="px-4 sm:px-6 py-3 bg-white border-b border-[#E5E7EB] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-[#1677B8] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs">
+                <BookOpen className="w-4 h-4" />
               </div>
-              <div className="w-28 bg-[#E5E7EB] h-1.5 rounded-full overflow-hidden">
-                <div
-                  className="bg-[#1677B8] h-full transition-all duration-300"
-                  style={{ width: `${progressPercent}%` }}
-                />
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#1677B8] bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                    {material.category}
+                  </span>
+                  <span className="text-xs font-mono text-[#6B7280]">
+                    Week {material.assignedWeek}
+                  </span>
+                  <span className="text-xs text-[#9CA3AF]">•</span>
+                  <span className="text-xs text-[#6B7280] font-mono">
+                    {material.pageRange || 'Reference'}
+                  </span>
+                </div>
+                <h2 className="text-sm sm:text-base font-bold text-[#111827] truncate mt-0.5">
+                  {material.name}
+                </h2>
               </div>
             </div>
 
-            {/* Mode Switcher Tabs */}
-            <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-[#E5E7EB]">
+            {/* Unobtrusive Progress Bar, Focus Mode Button & Tab Navigation */}
+            <div className="flex items-center gap-3">
+              <div className="hidden md:flex flex-col items-end gap-1 text-right">
+                <div className="text-[11px] font-mono text-[#6B7280]">
+                  {completedSections}/{totalSections || 1} sections • <strong className="text-[#111827]">{progressPercent}%</strong>
+                </div>
+                <div className="w-28 bg-[#E5E7EB] h-1.5 rounded-full overflow-hidden">
+                  <div
+                    className="bg-[#1677B8] h-full transition-all duration-300"
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Focus Mode Button */}
               <button
-                onClick={() => setActiveTab('textbook')}
-                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  activeTab === 'textbook'
-                    ? 'bg-white text-[#1677B8] shadow-2xs'
-                    : 'text-[#6B7280] hover:text-[#111827]'
-                }`}
+                onClick={() => {
+                  setIsFocusMode(true);
+                  sound.playClick();
+                  showToast('Focus Mode enabled: distractions hidden');
+                }}
+                className="px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#1677B8] text-xs font-bold border border-blue-200 flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                title="Enter Focus Mode (Distraction-Free Reading)"
               >
-                📖 Textbook
+                <Maximize2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Focus Mode</span>
               </button>
+
+              {/* Mode Switcher Tabs */}
+              <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-[#E5E7EB]">
+                <button
+                  onClick={() => setActiveTab('textbook')}
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    activeTab === 'textbook'
+                      ? 'bg-white text-[#1677B8] shadow-2xs'
+                      : 'text-[#6B7280] hover:text-[#111827]'
+                  }`}
+                >
+                  📖 Textbook
+                </button>
+                <button
+                  onClick={() => setActiveTab('flashcards')}
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    activeTab === 'flashcards'
+                      ? 'bg-white text-[#1677B8] shadow-2xs'
+                      : 'text-[#6B7280] hover:text-[#111827]'
+                  }`}
+                >
+                  📇 Flashcards
+                </button>
+                <button
+                  onClick={() => setActiveTab('notes')}
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    activeTab === 'notes'
+                      ? 'bg-white text-[#1677B8] shadow-2xs'
+                      : 'text-[#6B7280] hover:text-[#111827]'
+                  }`}
+                >
+                  📝 Notes
+                </button>
+              </div>
+
               <button
-                onClick={() => setActiveTab('flashcards')}
-                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  activeTab === 'flashcards'
-                    ? 'bg-white text-[#1677B8] shadow-2xs'
-                    : 'text-[#6B7280] hover:text-[#111827]'
-                }`}
+                onClick={onClose}
+                className="p-1.5 rounded-lg bg-white hover:bg-slate-100 text-[#6B7280] hover:text-[#111827] border border-[#E5E7EB] transition-colors cursor-pointer"
               >
-                📇 Flashcards
-              </button>
-              <button
-                onClick={() => setActiveTab('notes')}
-                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  activeTab === 'notes'
-                    ? 'bg-white text-[#1677B8] shadow-2xs'
-                    : 'text-[#6B7280] hover:text-[#111827]'
-                }`}
-              >
-                📝 Notes
+                <X className="w-4 h-4" />
               </button>
             </div>
-
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-lg bg-white hover:bg-slate-100 text-[#6B7280] hover:text-[#111827] border border-[#E5E7EB] transition-colors cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
           </div>
-        </div>
+        )}
 
         {/* Motivational Toast Notification (Requirement 13) */}
         {motivationalMessage && (
@@ -753,67 +860,69 @@ export const PdfReaderModal: React.FC<PdfReaderModalProps> = ({
 
           </div>
 
-          {/* Right Sidebar: Chapter Sections Checklist (Requirement 11) */}
-          <div className="w-full md:w-80 p-5 bg-slate-50 border-t md:border-t-0 md:border-l border-[#E5E7EB] flex flex-col justify-between overflow-y-auto space-y-5">
-            
-            {/* Sections Progress Checklist */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs font-bold text-[#6B7280] uppercase tracking-wider">
-                <span>Chapter Sections</span>
-                <span className="text-emerald-700 font-mono text-[11px]">
-                  {completedSections}/{totalSections || 1} Done
-                </span>
-              </div>
+          {/* Right Sidebar: Chapter Sections Checklist (Hidden in Focus Mode) */}
+          {!isFocusMode && (
+            <div className="w-full md:w-80 p-5 bg-slate-50 border-t md:border-t-0 md:border-l border-[#E5E7EB] flex flex-col justify-between overflow-y-auto space-y-5">
+              
+              {/* Sections Progress Checklist */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-xs font-bold text-[#6B7280] uppercase tracking-wider">
+                  <span>Chapter Sections</span>
+                  <span className="text-emerald-700 font-mono text-[11px]">
+                    {completedSections}/{totalSections || 1} Done
+                  </span>
+                </div>
 
-              {material.sections && material.sections.length > 0 ? (
-                <div className="space-y-2">
-                  {material.sections.map((sec) => (
-                    <div
-                      key={sec.id}
-                      onClick={() => handleToggleSection(sec.id)}
-                      className={`p-3 rounded-xl border flex items-center justify-between gap-2.5 cursor-pointer transition-all ${
-                        sec.completed
-                          ? 'bg-white border-emerald-200 text-[#9CA3AF]'
-                          : 'bg-white border-[#E5E7EB] text-[#222222] hover:border-[#1677B8]'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        {sec.completed ? (
-                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                        ) : (
-                          <Circle className="w-4 h-4 text-[#9CA3AF] shrink-0" />
-                        )}
-                        <span className={`text-xs truncate ${sec.completed ? 'line-through text-[#9CA3AF]' : 'text-[#111827] font-medium'}`}>
-                          {sec.title}
+                {material.sections && material.sections.length > 0 ? (
+                  <div className="space-y-2">
+                    {material.sections.map((sec) => (
+                      <div
+                        key={sec.id}
+                        onClick={() => handleToggleSection(sec.id)}
+                        className={`p-3 rounded-xl border flex items-center justify-between gap-2.5 cursor-pointer transition-all ${
+                          sec.completed
+                            ? 'bg-white border-emerald-200 text-[#9CA3AF]'
+                            : 'bg-white border-[#E5E7EB] text-[#222222] hover:border-[#1677B8]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          {sec.completed ? (
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          ) : (
+                            <Circle className="w-4 h-4 text-[#9CA3AF] shrink-0" />
+                          )}
+                          <span className={`text-xs truncate ${sec.completed ? 'line-through text-[#9CA3AF]' : 'text-[#111827] font-medium'}`}>
+                            {sec.title}
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-mono text-[#9CA3AF] shrink-0">
+                          p.{sec.page}
                         </span>
                       </div>
-                      <span className="text-[10px] font-mono text-[#9CA3AF] shrink-0">
-                        p.{sec.page}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-3 bg-white rounded-xl border border-[#E5E7EB] text-xs text-[#6B7280]">
-                  Core reference document. Read through topics to master the lesson points.
-                </div>
-              )}
-            </div>
-
-            {/* Material Study Plan & Next Revision Info */}
-            <div className="p-4 rounded-xl bg-white border border-[#E5E7EB] space-y-2 text-xs">
-              <div className="font-bold text-[#111827] flex items-center gap-1.5">
-                <Bookmark className="w-3.5 h-3.5 text-[#1677B8]" />
-                <span>Study Summary</span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-3 bg-white rounded-xl border border-[#E5E7EB] text-xs text-[#6B7280]">
+                    Core reference document. Read through topics to master the lesson points.
+                  </div>
+                )}
               </div>
-              <div className="text-[11px] text-[#6B7280] space-y-1">
-                <div>• Assigned: <strong>Week {material.assignedWeek}</strong></div>
-                <div>• Source: <strong>{material.sourceFile}</strong></div>
-                <div>• Next Revision: <strong>Scheduled via SRS</strong></div>
-              </div>
-            </div>
 
-          </div>
+              {/* Material Study Plan & Next Revision Info */}
+              <div className="p-4 rounded-xl bg-white border border-[#E5E7EB] space-y-2 text-xs">
+                <div className="font-bold text-[#111827] flex items-center gap-1.5">
+                  <Bookmark className="w-3.5 h-3.5 text-[#1677B8]" />
+                  <span>Study Summary</span>
+                </div>
+                <div className="text-[11px] text-[#6B7280] space-y-1">
+                  <div>• Assigned: <strong>Week {material.assignedWeek}</strong></div>
+                  <div>• Source: <strong>{material.sourceFile}</strong></div>
+                  <div>• Next Revision: <strong>Scheduled via SRS</strong></div>
+                </div>
+              </div>
+
+            </div>
+          )}
 
         </div>
 
